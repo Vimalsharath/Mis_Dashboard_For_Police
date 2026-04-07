@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CopSense – Police Intelligence & Management System. AI-powered law enforcement MIS with RBAC, NLP feedback, GPS tracking, and crime heatmaps.">
+  <title>CopSense – Police Intelligence & Management System</title>
+
+  <!-- Leaflet Maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+  <!-- App Styles -->
+  <link rel="stylesheet" href="/css/styles.css?v=1.1">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+
+<!-- ══════════════════════ AUTH SCREEN ══════════════════════ -->
+<div id="auth-screen">
+  <div class="auth-container">
+    <div class="auth-logo">
+      <div class="badge-icon">🛡️</div>
+      <h1>CopSense</h1>
+      <p>Police Intelligence & Management System</p>
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="Auth.showTab('login')">Sign In</button>
+        <button class="auth-tab" id="tab-register" onclick="Auth.showTab('register')">Register</button>
+      </div>
+
+      <div id="auth-msg"></div>
+
+      <!-- LOGIN FORM -->
+      <form id="login-form" onsubmit="Auth.login(event)">
+        <div class="form-group">
+          <label>Email Address <span class="required">*</span></label>
+          <input type="email" id="login-email" class="form-control" placeholder="your@email.com" required>
+          <div class="field-error" id="err-login-email"></div>
+        </div>
+        <div class="form-group">
+          <label>Password <span class="required">*</span></label>
+          <input type="password" id="login-password" class="form-control" placeholder="Enter password" required>
+          <div class="field-error" id="err-login-password"></div>
+        </div>
+
+        <!-- Demo login shortcuts -->
+        <div style="background:var(--bg-primary);border-radius:8px;padding:12px;margin-bottom:16px;border:1px solid var(--border);">
+          <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Quick Demo Login</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="Auth.quickLogin('ssp@copsense.in','Admin@123')">🏛️ SSP</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="Auth.quickLogin('inspector1@copsense.in','Admin@123')">🚔 Inspector</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="Auth.quickLogin('officer1@copsense.in','Admin@123')">👮 Officer</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="Auth.quickLogin('citizen1@copsense.in','User@123')">👤 Citizen</button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" id="login-btn">
+          Sign In
+        </button>
+      </form>
+
+      <!-- REGISTER FORM -->
+      <form id="register-form" style="display:none;" onsubmit="Auth.register(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Full Name <span class="required">*</span></label>
+            <input type="text" id="reg-name" class="form-control" placeholder="Full Name" required>
+            <div class="field-error" id="err-reg-name"></div>
+          </div>
+          <div class="form-group">
+            <label>Email <span class="required">*</span></label>
+            <input type="email" id="reg-email" class="form-control" placeholder="email@domain.com" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Password <span class="required">*</span></label>
+            <input type="password" id="reg-password" class="form-control" placeholder="Min 6 characters" required>
+          </div>
+          <div class="form-group">
+            <label>Role <span class="required">*</span></label>
+            <select id="reg-role" class="form-control" onchange="Auth.toggleOfficerFields()" required>
+              <option value="">Select Role</option>
+              <option value="citizen">Citizen</option>
+              <option value="field_officer">Field Officer</option>
+              <option value="station_officer">Station Officer</option>
+              <option value="ssp">District Head (SSP)</option>
+            </select>
+          </div>
+        </div>
+        <div id="officer-fields" style="display:none;">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Badge ID</label>
+              <input type="text" id="reg-badge" class="form-control" placeholder="e.g. FO-201">
+            </div>
+            <div class="form-group">
+              <label>Rank</label>
+              <input type="text" id="reg-rank" class="form-control" placeholder="e.g. Constable">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Specialization</label>
+              <select id="reg-spec" class="form-control">
+                <option value="">Select</option>
+                <option value="crime">Crime</option>
+                <option value="traffic">Traffic</option>
+                <option value="cyber">Cyber</option>
+                <option value="vip">VIP/Security</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Station ID</label>
+              <input type="number" id="reg-station" class="form-control" placeholder="Station ID">
+            </div>
+          </div>
+        </div>
+        <div id="reg-msg"></div>
+        <button type="submit" class="btn btn-primary btn-lg" id="register-btn">Create Account</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ APP SCREEN ══════════════════════ -->
+<div id="app-screen" style="display:none;">
+
+  <!-- SIDEBAR -->
+  <nav id="sidebar">
+    <div class="sidebar-brand">
+      <h2>🛡️ CopSense</h2>
+      <span>Police Intelligence System</span>
+    </div>
+
+    <div class="sidebar-user">
+      <img src="" alt="User" class="sidebar-user-avatar" id="user-avatar">
+      <div class="sidebar-user-info">
+        <h4 id="user-name">Loading...</h4>
+        <span id="user-role-badge" class="role-ssp">SSP</span>
+      </div>
+    </div>
+
+    <div class="sidebar-nav" id="sidebar-nav">
+      <!-- Dynamically populated by role -->
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="btn btn-danger btn-sm" style="width:100%;" onclick="Auth.logout()">
+        🚪 Sign Out
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div id="main-content">
+    <div id="topbar">
+      <div class="topbar-title" id="page-title">Dashboard</div>
+      <div class="topbar-actions">
+        <div class="alert-bell" onclick="Router.navigate('alerts')" title="Alerts">
+          🔔
+          <div class="alert-dot" id="alert-dot" style="display:none;"></div>
+        </div>
+        <img src="" alt="" class="sidebar-user-avatar" id="topbar-avatar" style="width:36px;height:36px;">
+      </div>
+    </div>
+
+    <div id="page-content">
+      <div class="loading-overlay">
+        <div class="spinner-lg"></div>
+        <p>Loading...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<!-- ══════════════════════ SCRIPTS ══════════════════════ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+<script src="/js/api.js?v=1.1"></script>
+<script src="/js/auth.js?v=1.1"></script>
+<script src="/js/dashboard.js?v=1.1"></script>
+<script src="/js/feedback.js?v=1.1"></script>
+<script src="/js/heatmap.js?v=1.1"></script>
+<script src="/js/cases.js?v=1.1"></script>
+<script src="/js/duty.js?v=1.1"></script>
+<script src="/js/custody.js?v=1.1"></script>
+<script src="/js/fir.js?v=1.1"></script>
+<script src="/js/complaints.js?v=1.1"></script>
+<script src="/js/deployment.js?v=1.1"></script>
+<script src="/js/alerts.js?v=1.1"></script>
+<script src="/js/emergency.js?v=1.1"></script>
+<script src="/js/app.js?v=1.1"></script>
+
+</body>
+</html>
